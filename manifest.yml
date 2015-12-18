@@ -1,0 +1,5 @@
+---
+applications:
+- name: explode
+  memory: 32M
+  command: bin/explode

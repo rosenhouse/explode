@@ -1,0 +1,6 @@
+{
+  "Deps": [],
+  "GoVersion": "go1.5.1",
+  "ImportPath": "github.com/pivotal-cf-experimental/explode",
+  "Packages": ["./..."]
+}
