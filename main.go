@@ -43,7 +43,7 @@ func postProxy(w http.ResponseWriter, r *http.Request) {
 }
 
 func writeHTML(w http.ResponseWriter, message string) {
-	fmt.Fprintf(w, "<html><body>%s</body></html>", message)
+	fmt.Fprintf(w, `<html><head><meta http-equiv="Refresh" content="5"></head><body>%s</body></html>`, message)
 }
 
 func getInfo(w http.ResponseWriter, r *http.Request) {
