@@ -38,7 +38,11 @@ func main() {
 			w.WriteHeader(response.StatusCode)
 			w.Write(bodyBytes)
 		} else {
-			fmt.Fprintf(w, "<html><body>Game Over!</body></html>")
+			if r.Method == "POST" {
+				fmt.Fprintf(w, `{"code":"GAME OVER"}`)
+			} else {
+				fmt.Fprintf(w, "<html><body>Game Over!</body></html>")
+			}
 		}
 	})
 
