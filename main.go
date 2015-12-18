@@ -68,6 +68,7 @@ func getInfo(w http.ResponseWriter, r *http.Request) {
 		var gameStatus struct {
 			InstanceCount int `json:"instance_count"`
 			Code          string
+			Timeout       int
 		}
 
 		err = json.Unmarshal(bodyBytes, &gameStatus)
@@ -85,7 +86,7 @@ func getInfo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		writeHTML(w, fmt.Sprintf("There are %d instances<br>The code is %q", gameStatus.InstanceCount, gameStatus.Code))
+		writeHTML(w, fmt.Sprintf("There are %d instances<br>The code is %q<br>You have less than %d seconds...", gameStatus.InstanceCount, gameStatus.Code, gameStatus.Timeout))
 		return
 	}
 }
