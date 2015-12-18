@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -33,9 +34,12 @@ func main() {
 			w.WriteHeader(http.StatusBadGateway)
 			return
 		}
-
-		w.WriteHeader(response.StatusCode)
-		w.Write(bodyBytes)
+		if response.StatusCode != 404 {
+			w.WriteHeader(response.StatusCode)
+			w.Write(bodyBytes)
+		} else {
+			fmt.Fprintf(w, "<html><body>Game Over!</body></html>")
+		}
 	})
 
 	port := os.Getenv("PORT")
