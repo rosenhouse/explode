@@ -80,9 +80,8 @@ func getInfo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if gameStatus.InstanceCount < 1 {
-			writeHTML(w, "Game server returned an invalid response")
-			w.WriteHeader(http.StatusBadGateway)
+		if gameStatus.Code == "" {
+			writeHTML(w, "The game has not yet started.")
 			return
 		}
 
