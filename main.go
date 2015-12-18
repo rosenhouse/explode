@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -8,41 +9,93 @@ import (
 	"os"
 )
 
-func main() {
+const gameServerHost = "game-server.cfapps.io"
 
-	gameServerHost := "game-server.cfapps.io"
+func postProxy(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		panic("expecting POST request only")
+	}
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	r.RequestURI = ""
+	r.URL.Host = gameServerHost
+	r.URL.Scheme = "http"
+	r.Host = gameServerHost
 
-		r.RequestURI = ""
-		r.URL.Host = gameServerHost
-		r.URL.Scheme = "http"
-		r.Host = gameServerHost
+	response, err := http.DefaultClient.Do(r)
+	if err != nil {
+		log.Printf("error reaching game server: %s", err)
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
 
-		log.Printf("got request: %+v\n", r)
+	bodyBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("error reading response bytes from game-server", err)
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+	if response.StatusCode != 404 {
+		w.WriteHeader(response.StatusCode)
+		w.Write(bodyBytes)
+	} else {
+		fmt.Fprintf(w, `{"code":"GAME OVER"}`)
+	}
+}
 
-		response, err := http.DefaultClient.Do(r)
-		if err != nil {
-			log.Printf("error reaching game server: %s", err)
-			w.WriteHeader(http.StatusBadGateway)
-			return
-		}
+func writeHTML(w http.ResponseWriter, message string) {
+	fmt.Fprintf(w, "<html><body>%s</body></html>", message)
+}
 
+func getInfo(w http.ResponseWriter, r *http.Request) {
+	response, err := http.Get("http://" + gameServerHost)
+	if err != nil {
+		log.Printf("error requesting state from game server: %s", err)
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+
+	if response.StatusCode == 404 {
+		writeHTML(w, "Game over!")
+		return
+	} else {
 		bodyBytes, err := ioutil.ReadAll(response.Body)
 		if err != nil {
-			log.Printf("error reading response bytes from game-server", err)
+			log.Printf("error reading response bytes from game-server: %s", err)
 			w.WriteHeader(http.StatusBadGateway)
 			return
 		}
-		if response.StatusCode != 404 {
-			w.WriteHeader(response.StatusCode)
-			w.Write(bodyBytes)
+
+		var gameStatus struct {
+			InstanceCount int
+		}
+
+		err = json.Unmarshal(bodyBytes, &gameStatus)
+		if err != nil {
+			w.WriteHeader(http.StatusBadGateway)
+			writeHTML(w, fmt.Sprintf(
+				"Error decoding JSON response from game-server.  Response body was %q, error: %s.",
+				bodyBytes, err))
+			return
+		}
+
+		if gameStatus.InstanceCount < 1 {
+			writeHTML(w, "Game server returned an invalid response")
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+
+		writeHTML(w, fmt.Sprintf("There are %d instances", gameStatus.InstanceCount))
+		return
+	}
+}
+
+func main() {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("got request: %+v\n", r)
+		if r.Method == "POST" {
+			postProxy(w, r)
 		} else {
-			if r.Method == "POST" {
-				fmt.Fprintf(w, `{"code":"GAME OVER"}`)
-			} else {
-				fmt.Fprintf(w, "<html><body>Game Over!</body></html>")
-			}
+			getInfo(w, r)
 		}
 	})
 
