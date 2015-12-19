@@ -88,7 +88,7 @@ height: 2em;
 vertical-align: middle;
 }
 .heart {
-color: black;
+color: red;
 font-weight: bold;
 font-size: 2.5em;
 vertical-align: middle;
