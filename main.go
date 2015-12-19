@@ -78,6 +78,7 @@ display: inline-block;
 border: 3px solid black;
 height: 2em;
 vertical-align: middle;
+text-align: middle;
 }
 
 section.code {
