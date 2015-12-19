@@ -43,7 +43,72 @@ func postProxy(w http.ResponseWriter, r *http.Request) {
 }
 
 func writeHTML(w http.ResponseWriter, message string) {
-	fmt.Fprintf(w, `<html><head><meta http-equiv="Refresh" content="5"></head><body>%s</body></html>`, message)
+	fmt.Fprintf(w, `<html><head>`+
+		`<meta http-equiv="Refresh" content="2">`+
+		`</head><body>%s</body></html>`, message)
+}
+
+type GameStatus struct {
+	InstanceCount int `json:"instance_count"`
+	Code          string
+	Timeout       int
+}
+
+func showStatus(w http.ResponseWriter, gameStatus GameStatus) {
+
+	writeHTML(w, `
+	<html><head>
+
+<style type="text/css">
+section{
+font-family: Courier;
+text-align: center;
+}
+
+section.lives {
+font-size: 6em;
+width: 49%;
+display: inline-block;
+}
+
+section.timer {
+font-size: 6em;
+width: 49%;
+display: inline-block;
+border: 3px solid black;
+height: 2em;
+vertical-align: middle;
+}
+
+section.code {
+text-align: center;
+font-size: 8em;
+border: 3px solid black;
+height: 2em;
+vertical-align: middle;
+}
+.heart {
+color: black;
+font-weight: bold;
+font-size: 2.5em;
+vertical-align: middle;
+}
+</style>
+</head><body>
+<section class="lives">
+<span class="heart">♥</span> `+fmt.Sprintf("%d", gameStatus.InstanceCount)+`
+</section>
+<section class="timer">
+`+fmt.Sprintf("%d", gameStatus.Timeout)+` sec
+</section>
+</br>
+</br>
+<section class="code"> `+
+		gameStatus.Code+`
+</section>
+
+</body></html>
+`)
 }
 
 func getInfo(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +120,7 @@ func getInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if response.StatusCode == 404 {
-		writeHTML(w, "Game over!")
+		writeHTML(w, "<h1>Game over!</h1>")
 		return
 	} else {
 		bodyBytes, err := ioutil.ReadAll(response.Body)
@@ -65,11 +130,7 @@ func getInfo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		var gameStatus struct {
-			InstanceCount int `json:"instance_count"`
-			Code          string
-			Timeout       int
-		}
+		var gameStatus GameStatus
 
 		err = json.Unmarshal(bodyBytes, &gameStatus)
 		if err != nil {
@@ -81,11 +142,11 @@ func getInfo(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if gameStatus.Code == "" {
-			writeHTML(w, "The game has not yet started.")
+			writeHTML(w, "<h1>The game has not yet started.</h1>")
 			return
 		}
 
-		writeHTML(w, fmt.Sprintf("There are %d instances<br>The code is %q<br>You have less than %d seconds...", gameStatus.InstanceCount, gameStatus.Code, gameStatus.Timeout))
+		showStatus(w, gameStatus)
 		return
 	}
 }
